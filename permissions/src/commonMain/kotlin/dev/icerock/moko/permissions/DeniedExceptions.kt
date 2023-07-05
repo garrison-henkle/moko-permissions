@@ -4,6 +4,11 @@
 
 package dev.icerock.moko.permissions
 
+open class PartiallyDeniedException(
+    val granted: List<Permission>,
+    message: String? = null,
+) : Exception(message)
+
 open class DeniedException(
     val permission: Permission,
     message: String? = null

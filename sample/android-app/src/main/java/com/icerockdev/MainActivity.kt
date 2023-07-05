@@ -11,6 +11,7 @@ import dev.icerock.moko.mvvm.dispatcher.eventsDispatcherOnMain
 import dev.icerock.moko.mvvm.getViewModel
 import dev.icerock.moko.permissions.DeniedAlwaysException
 import dev.icerock.moko.permissions.DeniedException
+import dev.icerock.moko.permissions.PartiallyDeniedException
 import dev.icerock.moko.permissions.Permission
 import dev.icerock.moko.permissions.PermissionsController
 
@@ -27,8 +28,9 @@ class MainActivity : AppCompatActivity(), SampleViewModel.EventListener {
             SampleViewModel(
                 eventsDispatcher = eventsDispatcherOnMain(),
                 permissionsController = PermissionsController(applicationContext = applicationContext),
-                permissionType = Permission.RECORD_AUDIO
-            )
+                permissionType = Permission.LOCATION,
+                onResultCallback = { android.util.Log.e("mokoEnhanced", "permissionGranted: ${it.name}") }
+            ){ msg -> android.util.Log.e("mokoEnhanced", "msg: $msg") }
         }.also {
             it.permissionsController.bind(lifecycle, supportFragmentManager)
             it.eventsDispatcher.bind(this, this)
@@ -42,6 +44,10 @@ class MainActivity : AppCompatActivity(), SampleViewModel.EventListener {
 
     override fun onSuccess() {
         showToast("Permission successfully granted!")
+    }
+
+    override fun onPartiallyDenied(exception: PartiallyDeniedException) {
+        showToast("Permission partially denied. Granted: ${exception.granted.map { it.name }}")
     }
 
     override fun onDenied(exception: DeniedException) {

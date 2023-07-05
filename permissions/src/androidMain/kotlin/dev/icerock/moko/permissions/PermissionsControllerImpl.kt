@@ -47,7 +47,7 @@ class PermissionsControllerImpl(
         lifecycle.addObserver(observer)
     }
 
-    override suspend fun providePermission(permission: Permission) {
+    override suspend fun providePermission(permission: Permission, allowPartialAndroidGrants: Boolean) {
         mutex.withLock {
             val fragmentManager: FragmentManager = awaitFragmentManager()
             val resolverFragment: ResolverFragment = getOrCreateResolverFragment(fragmentManager)
@@ -56,7 +56,8 @@ class PermissionsControllerImpl(
             suspendCoroutine { continuation ->
                 resolverFragment.requestPermission(
                     permission,
-                    platformPermission
+                    platformPermission,
+                    allowPartialAndroidGrants,
                 ) { continuation.resumeWith(it) }
             }
         }

@@ -14,6 +14,7 @@ import platform.CoreLocation.kCLAuthorizationStatusAuthorizedAlways
 import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
 import platform.CoreLocation.kCLAuthorizationStatusDenied
 import platform.CoreLocation.kCLAuthorizationStatusNotDetermined
+import platform.CoreLocation.kCLAuthorizationStatusRestricted
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -25,17 +26,16 @@ internal class LocationPermissionDelegate(
         return provideLocationPermission(CLLocationManager.authorizationStatus())
     }
 
-    override suspend fun getPermissionState(): PermissionState {
-        val status: CLAuthorizationStatus = CLLocationManager.authorizationStatus()
-        return when (status) {
+    override suspend fun getPermissionState(): PermissionState =
+        when (val status: CLAuthorizationStatus = CLLocationManager.authorizationStatus()) {
             kCLAuthorizationStatusAuthorizedAlways,
             kCLAuthorizationStatusAuthorizedWhenInUse -> PermissionState.Granted
 
-            kCLAuthorizationStatusNotDetermined -> PermissionState.NotDetermined
+            kCLAuthorizationStatusNotDetermined,
+            kCLAuthorizationStatusRestricted -> PermissionState.NotDetermined
             kCLAuthorizationStatusDenied -> PermissionState.DeniedAlways
             else -> error("unknown location authorization status $status")
         }
-    }
 
     private suspend fun provideLocationPermission(
         status: CLAuthorizationStatus

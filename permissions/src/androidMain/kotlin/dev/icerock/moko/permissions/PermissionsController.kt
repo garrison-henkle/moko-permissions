@@ -9,7 +9,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
 
 actual interface PermissionsController {
-    actual suspend fun providePermission(permission: Permission)
+    actual suspend fun providePermission(permission: Permission, allowPartialAndroidGrants: Boolean)
     actual suspend fun isPermissionGranted(permission: Permission): Boolean
     actual suspend fun getPermissionState(permission: Permission): PermissionState
     actual fun openAppSettings()

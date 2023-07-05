@@ -10,6 +10,7 @@ buildscript {
     }
 
     dependencies {
+        classpath(libs.artifactoryPlugin)
         classpath(libs.kotlinGradlePlugin)
         classpath(libs.androidGradlePlugin)
         classpath(libs.mokoGradlePlugin)

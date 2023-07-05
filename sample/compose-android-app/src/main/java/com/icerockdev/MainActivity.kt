@@ -28,6 +28,7 @@ import dev.icerock.moko.mvvm.dispatcher.eventsDispatcherOnMain
 import dev.icerock.moko.mvvm.getViewModel
 import dev.icerock.moko.permissions.DeniedAlwaysException
 import dev.icerock.moko.permissions.DeniedException
+import dev.icerock.moko.permissions.PartiallyDeniedException
 import dev.icerock.moko.permissions.Permission
 import dev.icerock.moko.permissions.PermissionsController
 import dev.icerock.moko.permissions.compose.BindEffect
@@ -46,7 +47,7 @@ class MainActivity : AppCompatActivity() {
                                 permissionsController = PermissionsController(
                                     applicationContext = applicationContext
                                 ),
-                                permissionType = Permission.CAMERA
+                                permissionType = Permission.LOCATION
                             )
                         }
                     )
@@ -68,6 +69,14 @@ fun TestScreen(viewModel: SampleViewModel) {
                 coroutineScope.launch {
                     scaffoldState.snackbarHostState.showSnackbar(
                         message = "Permission successfully granted!"
+                    )
+                }
+            }
+
+            override fun onPartiallyDenied(exception: PartiallyDeniedException) {
+                coroutineScope.launch {
+                    scaffoldState.snackbarHostState.showSnackbar(
+                        message = "Only some permissions granted! Permissions: ${exception.granted.map { it.name }}"
                     )
                 }
             }

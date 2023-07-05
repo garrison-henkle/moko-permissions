@@ -10,7 +10,7 @@ import dev.icerock.moko.permissions.PermissionState
 import dev.icerock.moko.permissions.PermissionsController
 
 expect abstract class PermissionsControllerMock constructor() : PermissionsController {
-    abstract override suspend fun providePermission(permission: Permission)
+    abstract override suspend fun providePermission(permission: Permission, allowPartialAndroidGrants: Boolean)
 
     abstract override suspend fun isPermissionGranted(permission: Permission): Boolean
 
@@ -23,7 +23,7 @@ fun createPermissionControllerMock(
 ): PermissionsControllerMock = object : PermissionsControllerMock() {
     private val granted = mutableSetOf<Permission>().apply { addAll(granted) }
 
-    override suspend fun providePermission(permission: Permission) {
+    override suspend fun providePermission(permission: Permission, allowPartialAndroidGrants: Boolean) {
         if (allow.contains(permission)) {
             this.granted.add(permission)
             return

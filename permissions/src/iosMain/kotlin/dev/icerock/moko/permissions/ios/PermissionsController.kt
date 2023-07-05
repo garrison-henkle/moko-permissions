@@ -16,7 +16,7 @@ import platform.UIKit.UIApplicationOpenSettingsURLString
 class PermissionsController : PermissionsControllerProtocol {
     private val locationManagerDelegate = LocationManagerDelegate()
 
-    override suspend fun providePermission(permission: Permission) {
+    override suspend fun providePermission(permission: Permission, allowPartialAndroidGrants: Boolean) {
         return getDelegate(permission).providePermission()
     }
 

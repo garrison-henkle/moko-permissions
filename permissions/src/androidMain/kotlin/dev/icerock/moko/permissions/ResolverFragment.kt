@@ -4,7 +4,9 @@
 
 package dev.icerock.moko.permissions
 
+import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -20,6 +22,8 @@ internal class ResolverFragment : Fragment() {
     }
 
     private var permissionCallback: PermissionCallback? = null
+
+    private var allowPartialGrants = false
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissionResults ->
@@ -38,14 +42,25 @@ internal class ResolverFragment : Fragment() {
             if (success) {
                 permissionCallback.callback.invoke(Result.success(Unit))
             } else {
-                if (shouldShowRequestPermissionRationale(permissionResults.keys.first())) {
-                    permissionCallback.callback.invoke(
-                        Result.failure(DeniedException(permissionCallback.permission))
-                    )
-                } else {
-                    permissionCallback.callback.invoke(
-                        Result.failure(DeniedAlwaysException(permissionCallback.permission))
-                    )
+                val grantedPermissions = if(allowPartialGrants){
+                    permissionResults.getPartialPermissionGrants()
+                } else emptyList()
+                when{
+                    grantedPermissions.isNotEmpty() -> {
+                        permissionCallback.callback.invoke(
+                            Result.failure(PartiallyDeniedException(grantedPermissions))
+                        )
+                    }
+                    shouldShowRequestPermissionRationale(permissionResults.keys.first()) -> {
+                        permissionCallback.callback.invoke(
+                            Result.failure(DeniedException(permissionCallback.permission))
+                        )
+                    }
+                    else -> {
+                        permissionCallback.callback.invoke(
+                            Result.failure(DeniedAlwaysException(permissionCallback.permission))
+                        )
+                    }
                 }
             }
         }
@@ -53,6 +68,7 @@ internal class ResolverFragment : Fragment() {
     fun requestPermission(
         permission: Permission,
         permissions: List<String>,
+        allowPartialGrants: Boolean,
         callback: (Result<Unit>) -> Unit
     ) {
         lifecycleScope.launch {
@@ -62,6 +78,23 @@ internal class ResolverFragment : Fragment() {
                         requireContext(),
                         it
                     ) != PackageManager.PERMISSION_GRANTED
+                }
+
+                val androidS = Build.VERSION.SDK_INT > Build.VERSION_CODES.S
+
+                if(
+                    androidS &&
+                    allowPartialGrants &&
+                    permission == Permission.LOCATION &&
+                    Manifest.permission.ACCESS_COARSE_LOCATION !in toRequest &&
+                    Manifest.permission.ACCESS_FINE_LOCATION in toRequest
+                ){
+                    callback.invoke(
+                        Result.failure(
+                            PartiallyDeniedException(granted = listOf(Permission.COARSE_LOCATION))
+                        )
+                    )
+                    return@repeatOnLifecycle
                 }
 
                 if (toRequest.isEmpty()) {
@@ -74,6 +107,8 @@ internal class ResolverFragment : Fragment() {
                     permissionCallback = null
                 }
 
+                this@ResolverFragment.allowPartialGrants = allowPartialGrants
+
                 permissionCallback = PermissionCallback(permission, callback)
 
                 requestPermissionLauncher.launch(toRequest.toTypedArray())
@@ -85,4 +120,13 @@ internal class ResolverFragment : Fragment() {
         val permission: Permission,
         val callback: (Result<Unit>) -> Unit
     )
+
+    private fun Map<String, Boolean>.getPartialPermissionGrants(): List<Permission>{
+        val grantedPermissions = hashSetOf<Permission>()
+        val grantedAndroidPermissions = toList().filter { it.second }.map { it.first }.toHashSet()
+        if(grantedAndroidPermissions.contains(Manifest.permission.ACCESS_COARSE_LOCATION)){
+            grantedPermissions += Permission.COARSE_LOCATION
+        }
+        return grantedPermissions.toList()
+    }
 }
